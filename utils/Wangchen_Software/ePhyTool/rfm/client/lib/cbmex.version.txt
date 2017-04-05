@@ -1,0 +1,6 @@
+This version of cbmex is built against hardware library v3.06. (It's a modified version of the standard cbmex in NSP folder)
+It's not compatible with lower version of NSP Central built with hw lib v3.05. 
+
+keep the .mexw32 and rename all others. the .mexw32 was copied from the cerebus file folder (hw lib v3.06). 
+the previous dll files from Hydrum didn't work after the firmware and software upgrade.
+

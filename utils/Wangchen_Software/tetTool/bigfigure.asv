@@ -1,0 +1,12 @@
+function h = bigfigure(p,varargin)
+%create a 'fullscreen' figure with scalable size.
+%p : scaling factor. 1 for full screen.
+%h : figure handle.
+
+scrSize = get(0,'ScreenSize');
+halfWidth   = scrSize(3)/2;
+halfHeight  = scrSize(4)/2;
+
+h = figure(varargin);
+set(h,'Position',[hal scrsz(4)/2 scrsz(3)-20 scrsz(4)/2-100]);
+

@@ -1,0 +1,2 @@
+cd /Volumes/stimulus/scripts/rfm
+DISPLAY=localhost:0.0 /Applications/MATLAB_R2007b/bin/maci/setsid /Applications/MATLAB_R2007b/bin/matlab -nodesktop -nosplash -nojvm -r "puttyConnect"

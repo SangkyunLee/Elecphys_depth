@@ -1,0 +1,19 @@
+%recordings that don't have full set (4 exp)
+
+37:) NormLuminance	2011-Oct-22	11-37-39  %last incomplete recording on oct. 10th rec in white matter
+
+
+70:) SquareMappingExperiment	2012-Feb-18	22-55-00
+71:) NormGrating	2012-Feb-19	00-31-49
+72:) NormLuminance	2012-Feb-19	01-48-00  % last recording on Feb, missing flashingbar. 9th rec.
+
+73:) SquareMappingExperiment	2012-Nov-13	08-13-54
+74:) NormGrating	2012-Nov-13	09-11-37
+75:) NormLuminance	2012-Nov-13	10-22-09  %missing flashinbar file ? on the log. found on another disk
+
+76:) SquareMappingExperiment	2012-Nov-13	17-01-03
+77:) NormLuminance	2012-Nov-13	18-45-12
+78:) NormGrating	2012-Nov-13	20-17-29 %missing flashingbar file ? found on another disk
+
+
+

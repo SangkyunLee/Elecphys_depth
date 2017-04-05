@@ -1,0 +1,165 @@
+function [CSD,pos] = iCSD(pot,el_pos,method)
+% compute CSD for laminar probe with inverse csd method (delta-source)
+% Input: 
+% F   : Mapping matrix from potential to csd
+% pot : event-triggered field potential (channel x time points)
+% method : delta-source or standard method (double derivative)
+
+%configure the electrode spacing profile.
+%el_pos ; column vector for electrode position.
+%d      ; current disk diameter
+%con    ; cortical conductivity. default 0.3
+
+switch method
+    case 'delta'
+        CSD = deltaCSD(pot,el_pos);
+        pos = el_pos;
+        return;
+        %run gaussian filter
+        %sigma = 2*mean(diff(el_pos));
+        sigma = 50;
+        [CSD,pos] = gaussian_filter(CSD,el_pos,sigma);
+        
+    case 'standard'
+        CSD = standardCSD(pot,el_pos);
+        pos = el_pos ;
+        
+    case 'kernel' %kCSD
+        [CSD,pos] = kernelCSD(pot,el_pos);
+        %return;
+        sigma = 50;
+        [CSD,pos] = gaussian_filter(CSD,pos,sigma);
+        
+end
+
+function [CSD,pos] = kernelCSD(pot,el_pos)
+%
+
+if el_pos(1) == 0 ;  %the bPotMatrixCalc fails at el_pos==0. see explaination within. -WW.
+    el_pos(1) = [];
+    pot(1,:)  = [];
+end
+
+x1 = 0; %set estimation start at zero.
+step = 100; 
+%constrain on xn when x1=0 : xn < r1/0.005 && xn > rn/0.995
+% upper limit is satisfied when r1>10 for max depth ~2000um
+%
+xn_low = round(el_pos(end)/0.995);
+
+addpath(genpath('./Software/CSD analysis/kCSDv1/1D/kcsd1d'));
+%estimation range
+X = x1 : step : xn_low+step ; 
+
+%current disk Radius.
+%diameter of micro-column in monkey v1 is 30um.
+nCol = 1;
+R = 15*nCol; %default is 1mm. 
+
+k = kCSD1d(el_pos/1000, pot, 'X', X/1000,'R',R/1000); %convert length in um to mm units
+k.estimate;
+CSD = k.csdEst;
+pos = X'; 
+
+rmpath(genpath('./Software/CSD analysis/kCSDv1/1D/kcsd1d'));
+
+
+function CSD = deltaCSD(pot,el_pos)
+
+%current disk diameter in um.
+d = 50; 
+%
+F = compute_FMatrix(el_pos,d);
+% CSD = inv(F)*pot;
+CSD = (F^(-1))*pot;
+
+
+function CSD = standardCSD(pot,el_pos)
+%pot : event-triggered potential (channels x time)
+%el_pos : column vector of electrode position
+
+CSD = zeros(size(pot));
+[nc,nt] = size(pot);
+i1 = 1 : nc - 1; 
+i2 = 2 : nc;
+%1st order spatial derivative along 1st dimension (row)
+dy = diff(pot,1,1); 
+dx = diff(el_pos) ;
+%backward derivative approx.
+dp = dy ./ repmat(dx,1,size(dy,2)); 
+%forward approx.
+dp2 = diff(dp,1,1)./repmat(dx(1:nc-2),1,size(dy,2));
+%
+CSD(2:nc-1,:) =  - dp2;
+
+
+function F = compute_FMatrix(el_pos,d)
+%
+cond = 0.3;      %cortical conductivity
+cond_top = cond; %coritcal surface conductivity.
+
+z1 = el_pos(1);
+h  = diff(el_pos); %general assumption on site-spacing 
+N  = length(el_pos);
+
+F  = zeros(N);
+
+for j = 1 : N
+    zj = z1 + sum(h(1:j-1));  %zj is csd-plane position
+    for i = 1 : N
+        zi = z1 + sum(h(1:i-1)); %zi is electrode position
+        F(j,i) = 1/(2*cond)*((sqrt((zj-zi)^2+(d/2)^2)-abs(zj-zi))+ ...
+            (cond-cond_top)/(cond+cond_top)*(sqrt((zj+zi)^2+(d/2)^2)-abs(zj+zi)));
+    end
+end
+
+
+function [fCSD,new_pos] = gaussian_filter(CSD,el_pos,sigma,width)
+%apply gaussian filter to reduce spatial noise in csd
+%
+%CSD : unfiltered CSD (channels x time)
+%el_pos : column vector for electrode position 
+%sigma  : standard deviation of gaussian filter
+%width  : gaussian filter width : (5*sigma)
+
+if nargin < 4 ; width = 5 * sigma; end
+
+avgD    = mean(diff(el_pos)); %(pos(nc)-pos(1))/(nc-1)
+dFactor = 5;                  % dividing factor for interploating positions at higher spatial resolution  
+step    = avgD/dFactor;
+
+%
+new_pos = el_pos(1) : step : el_pos(end); % length = dFactor * (nc-1) + 1
+new_pos = new_pos'; 
+np      = length(new_pos); 
+
+[nc,nt] = size(CSD); %channel#, time points #
+
+%interpolated csd
+new_CSD = zeros(np,nt);
+%interpolate CSD at evenly spaced sites
+for i = 1 : nt
+    new_CSD(:,i) = interp1q(el_pos,CSD(:,i),new_pos);
+end
+    
+x     = -width/2 : step : width/2;
+gx    = 1/(sigma*sqrt(2*pi)) * exp(-x.^2/(2*sigma^2));
+nf    = length(x); %filter length
+
+tmp_CSD = zeros(np + 2*nf , nt);
+tmp_CSD(nf+1 : nf + np, :) = new_CSD ; 
+
+scaling = sum(gx);
+tmp_CSD = filter(gx/scaling,1,tmp_CSD);
+%filtered CSD
+fCSD = tmp_CSD(round(1.5*nf)+1 : round(1.5*nf)+np , :);
+
+
+
+
+
+
+
+
+
+
